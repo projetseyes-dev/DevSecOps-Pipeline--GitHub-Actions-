@@ -181,7 +181,7 @@ jobs:
         run: mkdir -p reports
 
       - name: Run Trivy vulnerability scan (Quality Gate)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -195,7 +195,7 @@ jobs:
 
       - name: Run Trivy (SARIF + JSON for reporting)
         if: always()
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -207,7 +207,7 @@ jobs:
 
       - name: Generate SBOM (CycloneDX)
         if: always()
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
