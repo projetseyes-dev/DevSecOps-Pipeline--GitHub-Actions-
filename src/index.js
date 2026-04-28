@@ -16,7 +16,6 @@ app.get('/health', (_req, res) => {
 
 app.get('/echo', (req, res) => {
   const message = sanitizeInput(req.query.message || '');
-  console.log('demo lint failure scenario');
   res.status(200).json({ message });
 });
 
