@@ -181,39 +181,41 @@ jobs:
         run: mkdir -p reports
 
       - name: Run Trivy vulnerability scan (Quality Gate)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'table'
-          severity: ${{ env.FAIL_ON_SEVERITY }}
-          exit-code: '1'
-          ignore-unfixed: false
-          vuln-type: 'library'
-          scanners: 'vuln'
-          trivyignores: '.trivyignore'
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            aquasec/trivy:latest \
+            fs /workspace \
+            --severity "${FAIL_ON_SEVERITY}" \
+            --exit-code 1 \
+            --ignore-unfixed=false \
+            --vuln-type library \
+            --scanners vuln \
+            --ignorefile /workspace/.trivyignore
 
-      - name: Run Trivy (SARIF + JSON for reporting)
+      - name: Run Trivy (SARIF report)
         if: always()
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'reports/trivy-results.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
-          ignore-unfixed: false
-          vuln-type: 'library'
-          scanners: 'vuln,secret,misconfig'
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            aquasec/trivy:latest \
+            fs /workspace \
+            --format sarif \
+            --output /workspace/reports/trivy-results.sarif \
+            --severity CRITICAL,HIGH,MEDIUM,LOW \
+            --ignore-unfixed=false \
+            --vuln-type library \
+            --scanners vuln,secret,misconfig || true
 
       - name: Generate SBOM (CycloneDX)
         if: always()
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'cyclonedx'
-          output: 'reports/sbom.cyclonedx.json'
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            aquasec/trivy:latest \
+            fs /workspace \
+            --format cyclonedx \
+            --output /workspace/reports/sbom.cyclonedx.json || true
 
       - name: Upload Trivy SARIF to GitHub Security
         if: always() && hashFiles('reports/trivy-results.sarif') != ''
