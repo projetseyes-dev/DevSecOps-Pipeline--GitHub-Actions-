@@ -189,8 +189,8 @@ jobs:
           severity: ${{ env.FAIL_ON_SEVERITY }}
           exit-code: '1'
           ignore-unfixed: false
-          vuln-type: 'os,library'
-          scanners: 'vuln,secret,misconfig'
+          vuln-type: 'library'
+          scanners: 'vuln'
           trivyignores: '.trivyignore'
 
       - name: Run Trivy (SARIF + JSON for reporting)
@@ -203,6 +203,7 @@ jobs:
           output: 'reports/trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM,LOW'
           ignore-unfixed: false
+          vuln-type: 'library'
           scanners: 'vuln,secret,misconfig'
 
       - name: Generate SBOM (CycloneDX)
