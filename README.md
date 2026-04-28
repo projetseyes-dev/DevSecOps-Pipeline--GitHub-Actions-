@@ -22,7 +22,7 @@ L'objectif n'est pas de produire un rapport de sécurité supplémentaire, il es
 |-------------------------------|----------------------------------------------------------------------|
 | Security as Code               | Tous les contrôles vivent dans le repo, versionnés, code-reviewed. |
 | Fail closed (deny by default)  | Le pipeline échoue si la moindre vulnérabilité Critical/High est détectée. |
-| Provable & auditable           | Chaque exécution produit des artefacts SARIF + SBOM conservés 30–90 jours. |
+| Provable & auditable           | Chaque exécution produit des artefacts SARIF + SBOM conservés 30-90 jours. |
 | Least privilege                | `permissions: contents: read` au niveau du workflow, élévation par job. |
 | Reproducibility                | `npm ci`, versions d'actions épinglées, scans hebdomadaires planifiés. |
 
@@ -67,7 +67,7 @@ Cinq jobs s'exécutent **en parallèle** pour minimiser la durée du feedback (~
 
 ---
 
-## 4. Le Quality Gate — la pièce centrale
+## 4. Le Quality Gate - la piece centrale
 
 Le pipeline implémente un **Quality Gate strict**. La règle est simple et non négociable :
 
@@ -122,35 +122,35 @@ En bloquant le merge dès le PR, on **empêche l'accumulation** : aucune vulnér
 
 Ce pipeline produit des **preuves d'audit automatisées et reproductibles**. Chaque exécution génère un *evidence package* (artefacts + logs GitHub Actions) conservé selon la politique de rétention.
 
-### 6.1. SOC 2 — Trust Services Criteria
+### 6.1. SOC 2 - Trust Services Criteria
 
 | Critère SOC 2                                 | Contrôle apporté par le pipeline                                                  | Evidence                                  |
 |-----------------------------------------------|-----------------------------------------------------------------------------------|-------------------------------------------|
-| **CC6.1** — Logical access controls           | `permissions: contents: read`, CODEOWNERS sur les workflows, branch protection.   | Logs GitHub, paramètres repo.            |
-| **CC6.6** — Vulnerability management          | Trivy SCA, scans hebdomadaires, MTTR tracké.                                      | SARIF artifacts, GitHub Security tab.    |
-| **CC6.7** — Data transmission integrity       | Helmet, secret scanning, pas de secret dans le code.                              | Gitleaks reports.                         |
-| **CC7.1** — Detection of security events      | SAST + secret scanning à chaque commit + cron hebdo.                              | Workflow run history (rétention 90 j).   |
-| **CC7.2** — Monitoring of controls            | Quality Gate consolidé, KPI dashboard.                                            | Step summary GitHub Actions.              |
-| **CC8.1** — Change management                 | PR obligatoire, controls bloquants, code review via CODEOWNERS.                   | Historique PR + status checks.           |
+| **CC6.1** - Logical access controls           | `permissions: contents: read`, CODEOWNERS sur les workflows, branch protection.   | Logs GitHub, paramètres repo.            |
+| **CC6.6** - Vulnerability management          | Trivy SCA, scans hebdomadaires, MTTR tracké.                                      | SARIF artifacts, GitHub Security tab.    |
+| **CC6.7** - Data transmission integrity       | Helmet, secret scanning, pas de secret dans le code.                              | Gitleaks reports.                         |
+| **CC7.1** - Detection of security events      | SAST + secret scanning à chaque commit + cron hebdo.                              | Workflow run history (rétention 90 j).   |
+| **CC7.2** - Monitoring of controls            | Quality Gate consolidé, KPI dashboard.                                            | Step summary GitHub Actions.              |
+| **CC8.1** - Change management                 | PR obligatoire, controls bloquants, code review via CODEOWNERS.                   | Historique PR + status checks.           |
 
-### 6.2. ISO 27001:2022 — Annex A
+### 6.2. ISO 27001:2022 - Annex A
 
 | Contrôle ISO 27001                            | Contrôle apporté par le pipeline                                                  |
 |-----------------------------------------------|-----------------------------------------------------------------------------------|
-| **A.5.23** — Information security for cloud services | Pipeline exécuté sur GitHub-hosted runners avec permissions minimales.        |
-| **A.8.8** — Management of technical vulnerabilities  | Trivy + scans planifiés + procédure d'exception formalisée.                   |
-| **A.8.9** — Configuration management                 | Workflow versionné, immutable, code-reviewed.                                  |
-| **A.8.25** — Secure development life cycle           | Le présent template **est** le SDLC sécurisé.                                  |
-| **A.8.26** — Application security requirements       | OWASP Top 10 (Semgrep `p/owasp-top-ten`).                                     |
-| **A.8.28** — Secure coding                           | ESLint + `eslint-plugin-security` + standards `docs/policy/`.                  |
-| **A.8.29** — Security testing in development & acceptance | SAST + SCA + Secret Scanning bloquants.                                  |
-| **A.8.30** — Outsourced development                  | Même contrôle appliqué à tous les contributeurs (internes & prestataires).    |
+| **A.5.23** - Information security for cloud services | Pipeline exécuté sur GitHub-hosted runners avec permissions minimales.        |
+| **A.8.8** - Management of technical vulnerabilities  | Trivy + scans planifiés + procédure d'exception formalisée.                   |
+| **A.8.9** - Configuration management                 | Workflow versionné, immutable, code-reviewed.                                  |
+| **A.8.25** - Secure development life cycle           | Le présent template **est** le SDLC sécurisé.                                  |
+| **A.8.26** - Application security requirements       | OWASP Top 10 (Semgrep `p/owasp-top-ten`).                                     |
+| **A.8.28** - Secure coding                           | ESLint + `eslint-plugin-security` + standards `docs/policy/`.                  |
+| **A.8.29** - Security testing in development & acceptance | SAST + SCA + Secret Scanning bloquants.                                  |
+| **A.8.30** - Outsourced development                  | Même contrôle appliqué à tous les contributeurs (internes & prestataires).    |
 
 ### 6.3. Mapping additionnel
 
-- **OWASP Top 10 (2021)** — couvert par le ruleset Semgrep `p/owasp-top-ten`.
-- **OWASP ASVS Level 2** — couvert par les standards de [`docs/policy/SECURITY_STANDARDS.md`](./docs/policy/SECURITY_STANDARDS.md).
-- **NIST SSDF (SP 800-218)** — pratiques PW.4, PW.5, PW.7, PW.8, RV.1.
+- **OWASP Top 10 (2021)** - couvert par le ruleset Semgrep `p/owasp-top-ten`.
+- **OWASP ASVS Level 2** - couvert par les standards de [`docs/policy/SECURITY_STANDARDS.md`](./docs/policy/SECURITY_STANDARDS.md).
+- **NIST SSDF (SP 800-218)** - pratiques PW.4, PW.5, PW.7, PW.8, RV.1.
 
 ---
 
@@ -241,10 +241,10 @@ Script prêt à l'emploi : [`scripts/github-hardening.ps1`](./scripts/github-har
 
 ## 11. Licence
 
-Apache 2.0 — voir [`LICENSE`](./LICENSE).
+Apache 2.0 - voir [`LICENSE`](./LICENSE).
 
 ---
 
 **Document maintenu par** : Lead DevSecOps Office
-**Classification** : Internal — distribution libre intra-organisation
+**Classification** : Internal - distribution libre intra-organisation
 **Dernière revue** : à chaque modification du workflow ou des standards
