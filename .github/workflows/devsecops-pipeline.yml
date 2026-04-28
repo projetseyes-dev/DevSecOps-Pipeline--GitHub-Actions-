@@ -141,7 +141,7 @@ jobs:
 
       - name: Upload Semgrep SARIF to GitHub Security
         if: always() && hashFiles('reports/semgrep.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: reports/semgrep.sarif
           category: semgrep
@@ -216,7 +216,7 @@ jobs:
 
       - name: Upload Trivy SARIF to GitHub Security
         if: always() && hashFiles('reports/trivy-results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: reports/trivy-results.sarif
           category: trivy
