@@ -10,7 +10,7 @@
     "start": "node src/index.js",
     "lint": "eslint . --ext .js --max-warnings=0",
     "lint:report": "eslint . --ext .js -f json -o reports/eslint-report.json || true",
-    "test": "node --test test/",
+    "test": "node --test test/**/*.test.js",
     "audit:ci": "npm audit --omit=dev --audit-level=high"
   },
   "keywords": [

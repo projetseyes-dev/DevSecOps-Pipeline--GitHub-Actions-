@@ -103,17 +103,25 @@ jobs:
       - name: Run Semgrep (SARIF output)
         run: |
           mkdir -p reports
-          semgrep ci \
+          semgrep scan \
+            --config=p/owasp-top-ten \
+            --config=p/javascript \
+            --config=p/nodejs \
+            --config=p/security-audit \
+            --config=p/secrets \
+            --json --output=reports/semgrep.json \
+            --error \
+            --severity=ERROR \
+            --severity=WARNING
+          semgrep scan \
             --config=p/owasp-top-ten \
             --config=p/javascript \
             --config=p/nodejs \
             --config=p/security-audit \
             --config=p/secrets \
             --sarif --output=reports/semgrep.sarif \
-            --json --output=reports/semgrep.json \
-            --error \
             --severity=ERROR \
-            --severity=WARNING
+            --severity=WARNING || true
 
       - name: Quality Gate - fail on High/Critical SAST findings
         if: always()
@@ -132,7 +140,7 @@ jobs:
           echo "Quality Gate PASSED for SAST."
 
       - name: Upload Semgrep SARIF to GitHub Security
-        if: always()
+        if: always() && hashFiles('reports/semgrep.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: reports/semgrep.sarif
@@ -169,6 +177,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Ensure reports directory exists
+        run: mkdir -p reports
+
       - name: Run Trivy vulnerability scan (Quality Gate)
         uses: aquasecurity/trivy-action@0.28.0
         with:
@@ -204,7 +215,7 @@ jobs:
           output: 'reports/sbom.cyclonedx.json'
 
       - name: Upload Trivy SARIF to GitHub Security
-        if: always()
+        if: always() && hashFiles('reports/trivy-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: reports/trivy-results.sarif
