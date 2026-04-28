@@ -1,10 +1,10 @@
-# DevSecOps Pipeline Template — Secure CI/CD by Default
+# DevSecOps Pipeline Template - Secure CI/CD by Default
 
 > **Audience** : RSSI / CISO, Heads of Engineering, Auditeurs SOC 2 / ISO 27001, Lead Developers.
 > **Objet** : Modèle de pipeline CI/CD GitHub Actions intégrant les contrôles de sécurité obligatoires de l'organisation, conçu pour réduire la dette technique de sécurité et fournir des preuves d'audit (*evidence*) reproductibles.
 
-[![DevSecOps Pipeline](https://img.shields.io/badge/DevSecOps-enforced-success)](./.github/workflows/devsecops-pipeline.yml)
-[![Quality Gate](https://img.shields.io/badge/Quality_Gate-Critical%2FHigh%20%3D%20FAIL-critical)](./.github/workflows/devsecops-pipeline.yml)
+[![Pipeline main](https://github.com/projetseyes-dev/DevSecOps-Pipeline--GitHub-Actions-/actions/workflows/devsecops-pipeline.yml/badge.svg?branch=main)](https://github.com/projetseyes-dev/DevSecOps-Pipeline--GitHub-Actions-/actions/workflows/devsecops-pipeline.yml)
+[![Quality Gate Policy](https://img.shields.io/badge/Quality_Gate-Critical%2FHigh%20%3D%20FAIL-critical)](https://github.com/projetseyes-dev/DevSecOps-Pipeline--GitHub-Actions-/actions/workflows/devsecops-pipeline.yml)
 [![SOC 2](https://img.shields.io/badge/SOC%202-aligned-blue)](./docs/policy/SECURITY_STANDARDS.md)
 [![ISO 27001](https://img.shields.io/badge/ISO%2027001-aligned-blue)](./docs/policy/SECURITY_STANDARDS.md)
 
@@ -14,7 +14,7 @@
 
 Ce dépôt est un **template d'organisation** (`.github` template) destiné à être consommé par toutes les nouvelles applications. Il matérialise la stratégie « **Shift-Left Security** » : la sécurité n'est plus une étape gate-keeper en fin de cycle, mais un *contrôle automatique, traçable et bloquant* exécuté à chaque commit et chaque pull request.
 
-L'objectif n'est pas de produire un rapport de sécurité supplémentaire — il est de **rendre impossible la livraison de code non conforme** aux standards de l'organisation.
+L'objectif n'est pas de produire un rapport de sécurité supplémentaire, il est de **rendre impossible la livraison de code non conforme** aux standards de l'organisation.
 
 ### Principes directeurs
 
@@ -118,7 +118,7 @@ En bloquant le merge dès le PR, on **empêche l'accumulation** : aucune vulnér
 
 ---
 
-## 6. Conformité — Mapping SOC 2 & ISO 27001
+## 6. Conformité - Mapping SOC 2 & ISO 27001
 
 Ce pipeline produit des **preuves d'audit automatisées et reproductibles**. Chaque exécution génère un *evidence package* (artefacts + logs GitHub Actions) conservé selon la politique de rétention.
 
@@ -231,7 +231,15 @@ docker run --rm -v "$PWD:/src" aquasec/trivy fs --severity CRITICAL,HIGH /src
 
 ---
 
-## 10. Licence
+## 10. Industrialisation GitHub
+
+Pour appliquer l'enforcement plateforme (template, branch protection, required checks), voir [`docs/INDUSTRIALIZATION.md`](./docs/INDUSTRIALIZATION.md).
+
+Script prêt à l'emploi : [`scripts/github-hardening.ps1`](./scripts/github-hardening.ps1).
+
+---
+
+## 11. Licence
 
 Apache 2.0 — voir [`LICENSE`](./LICENSE).
 
