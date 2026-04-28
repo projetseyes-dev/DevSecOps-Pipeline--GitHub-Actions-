@@ -1,0 +1,28 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es2022": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "script"
+  },
+  "plugins": ["security"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:security/recommended-legacy"
+  ],
+  "rules": {
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+    "no-console": "warn",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "security/detect-object-injection": "warn",
+    "security/detect-non-literal-fs-filename": "error",
+    "security/detect-child-process": "error",
+    "security/detect-eval-with-expression": "error"
+  },
+  "ignorePatterns": ["node_modules/", "dist/", "coverage/", "reports/"]
+}

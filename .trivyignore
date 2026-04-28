@@ -1,0 +1,9 @@
+# Trivy ignore file
+# Use this file to suppress findings ONLY after a documented risk acceptance
+# has been signed off by the Security Champion + Engineering Manager.
+#
+# Format:
+#   <CVE-ID>      # Reason: <ticket-id> - <short justification> - expires <YYYY-MM-DD>
+#
+# Example (commented out):
+# CVE-2023-99999  # Reason: SEC-1234 - false positive in transitive dep, expires 2026-12-31

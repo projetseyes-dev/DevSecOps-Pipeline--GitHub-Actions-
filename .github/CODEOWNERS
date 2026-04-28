@@ -1,0 +1,25 @@
+# CODEOWNERS - Mandatory reviewers for sensitive paths.
+# Format: <pattern> <@owner1> <@owner2> ...
+# Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+
+# Default owners
+*                                   @org/engineering
+
+# Pipeline & CI/CD configuration - Security team approval required
+/.github/                           @org/security @org/devsecops
+/.github/workflows/                 @org/security @org/devsecops
+
+# Security tooling configuration
+/.gitleaks.toml                     @org/security
+/.semgrepignore                     @org/security
+/.trivyignore                       @org/security
+/.eslintrc.json                     @org/security @org/engineering
+
+# Security policy & governance docs
+/docs/policy/                       @org/security @org/ciso-office
+/SECURITY.md                        @org/security
+/README.md                          @org/security @org/engineering
+
+# Auth, crypto, secrets handling (extend with project-specific paths)
+/src/auth/                          @org/security
+/src/crypto/                        @org/security

@@ -1,0 +1,285 @@
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Weekly drift scan every Monday at 06:00 UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+# Principle of least privilege at the workflow level
+permissions:
+  contents: read
+
+concurrency:
+  group: devsecops-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  # Severity threshold enforced by the Quality Gate
+  FAIL_ON_SEVERITY: 'CRITICAL,HIGH'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. LINTING - Code quality & security-aware static analysis (eslint-plugin-security)
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint (ESLint + security rules)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Generate ESLint JSON report
+        if: always()
+        run: |
+          mkdir -p reports
+          npm run lint:report
+
+      - name: Upload ESLint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report
+          path: reports/eslint-report.json
+          retention-days: 30
+
+  # ---------------------------------------------------------------------------
+  # 2. SECRET SCANNING - Gitleaks
+  # ---------------------------------------------------------------------------
+  secret-scanning:
+    name: Secret Scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Full history is required so Gitleaks can audit historical commits
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'true'
+          GITLEAKS_ENABLE_SUMMARY: 'true'
+        # Any leak detected fails the job (exit code != 0)
+
+  # ---------------------------------------------------------------------------
+  # 3. SAST - Semgrep
+  # ---------------------------------------------------------------------------
+  sast:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: semgrep/semgrep:latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep (SARIF output)
+        run: |
+          mkdir -p reports
+          semgrep ci \
+            --config=p/owasp-top-ten \
+            --config=p/javascript \
+            --config=p/nodejs \
+            --config=p/security-audit \
+            --config=p/secrets \
+            --sarif --output=reports/semgrep.sarif \
+            --json --output=reports/semgrep.json \
+            --error \
+            --severity=ERROR \
+            --severity=WARNING
+
+      - name: Quality Gate - fail on High/Critical SAST findings
+        if: always()
+        run: |
+          if [ ! -f reports/semgrep.json ]; then
+            echo "Semgrep report missing"; exit 1
+          fi
+          # Semgrep severities: ERROR (~Critical/High), WARNING (~Medium), INFO (~Low)
+          HIGH_COUNT=$(jq '[.results[] | select(.extra.severity=="ERROR")] | length' reports/semgrep.json)
+          echo "High/Critical SAST findings: $HIGH_COUNT"
+          if [ "$HIGH_COUNT" -gt 0 ]; then
+            echo "::error::Quality Gate FAILED - $HIGH_COUNT High/Critical SAST findings detected."
+            jq '.results[] | select(.extra.severity=="ERROR") | {check_id, path, start, message: .extra.message}' reports/semgrep.json
+            exit 1
+          fi
+          echo "Quality Gate PASSED for SAST."
+
+      - name: Upload Semgrep SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/semgrep.sarif
+          category: semgrep
+
+      - name: Upload Semgrep artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: reports/semgrep.*
+          retention-days: 30
+
+  # ---------------------------------------------------------------------------
+  # 4. DEPENDENCY CHECK - Trivy (filesystem + SBOM)
+  # ---------------------------------------------------------------------------
+  dependency-check:
+    name: Dependency Check (Trivy SCA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run Trivy vulnerability scan (Quality Gate)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: ${{ env.FAIL_ON_SEVERITY }}
+          exit-code: '1'
+          ignore-unfixed: false
+          vuln-type: 'os,library'
+          scanners: 'vuln,secret,misconfig'
+          trivyignores: '.trivyignore'
+
+      - name: Run Trivy (SARIF + JSON for reporting)
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'reports/trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+          ignore-unfixed: false
+          scanners: 'vuln,secret,misconfig'
+
+      - name: Generate SBOM (CycloneDX)
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'cyclonedx'
+          output: 'reports/sbom.cyclonedx.json'
+
+      - name: Upload Trivy SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/trivy-results.sarif
+          category: trivy
+
+      - name: Upload Trivy artifacts (SARIF + SBOM)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-and-sbom
+          path: |
+            reports/trivy-results.sarif
+            reports/sbom.cyclonedx.json
+          retention-days: 90
+
+  # ---------------------------------------------------------------------------
+  # 5. UNIT TESTS (fast feedback, runs in parallel)
+  # ---------------------------------------------------------------------------
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+
+  # ---------------------------------------------------------------------------
+  # 6. QUALITY GATE - Aggregates results from all security jobs
+  # ---------------------------------------------------------------------------
+  quality-gate:
+    name: Quality Gate (Critical/High = FAIL)
+    runs-on: ubuntu-latest
+    needs: [lint, secret-scanning, sast, dependency-check, test]
+    if: always()
+    steps:
+      - name: Evaluate upstream job results
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          SECRETS_RESULT: ${{ needs.secret-scanning.result }}
+          SAST_RESULT: ${{ needs.sast.result }}
+          SCA_RESULT: ${{ needs.dependency-check.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          set -e
+          echo "## Quality Gate Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Control                  | Result          |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------------------------|-----------------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Lint (ESLint)            | ${LINT_RESULT}    |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Secret Scan (Gitleaks)   | ${SECRETS_RESULT} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| SAST (Semgrep)           | ${SAST_RESULT}    |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| SCA (Trivy)              | ${SCA_RESULT}     |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Unit tests               | ${TEST_RESULT}    |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Severity threshold: \`${FAIL_ON_SEVERITY}\`" >> "$GITHUB_STEP_SUMMARY"
+
+          FAILED=0
+          for r in "$LINT_RESULT" "$SECRETS_RESULT" "$SAST_RESULT" "$SCA_RESULT" "$TEST_RESULT"; do
+            if [ "$r" != "success" ]; then
+              FAILED=1
+            fi
+          done
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo "::error::Quality Gate FAILED - one or more security/quality controls did not pass."
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Result: FAIL** - the merge is blocked." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "Quality Gate PASSED."
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Result: PASS** - merge allowed." >> "$GITHUB_STEP_SUMMARY"

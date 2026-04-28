@@ -1,0 +1,36 @@
+{
+  "name": "devsecops-pipeline-template",
+  "version": "1.0.0",
+  "description": "Secure CI/CD pipeline template (Node.js) integrating Gitleaks, Semgrep, Trivy and ESLint with a Critical/High quality gate.",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "lint": "eslint . --ext .js --max-warnings=0",
+    "lint:report": "eslint . --ext .js -f json -o reports/eslint-report.json || true",
+    "test": "node --test test/",
+    "audit:ci": "npm audit --omit=dev --audit-level=high"
+  },
+  "keywords": [
+    "devsecops",
+    "ci-cd",
+    "github-actions",
+    "sast",
+    "sca",
+    "secret-scanning",
+    "soc2",
+    "iso27001"
+  ],
+  "author": "Lead DevSecOps",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "express": "^4.19.2",
+    "helmet": "^7.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-plugin-security": "^3.0.1"
+  }
+}
