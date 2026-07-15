@@ -55,7 +55,7 @@ jobs:
 
       - name: Upload ESLint report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: eslint-report
           path: reports/eslint-report.json
@@ -159,7 +159,7 @@ jobs:
 
       - name: Upload Semgrep artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: semgrep-report
           path: reports/semgrep.*
@@ -237,7 +237,7 @@ jobs:
 
       - name: Upload Trivy artifacts (SARIF + SBOM)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: trivy-and-sbom
           path: |
