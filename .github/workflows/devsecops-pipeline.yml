@@ -100,9 +100,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run Semgrep (SARIF output)
+      - name: Run Semgrep (JSON report)
         run: |
           mkdir -p reports
+          # Do NOT use --error here: Semgrep would fail the step on WARNING findings.
+          # Only ERROR (~Critical/High) must block the Quality Gate below.
           semgrep scan \
             --config=p/owasp-top-ten \
             --config=p/javascript \
@@ -110,9 +112,13 @@ jobs:
             --config=p/security-audit \
             --config=p/secrets \
             --json --output=reports/semgrep.json \
-            --error \
             --severity=ERROR \
             --severity=WARNING
+
+      - name: Run Semgrep (SARIF report)
+        if: always()
+        run: |
+          mkdir -p reports
           semgrep scan \
             --config=p/owasp-top-ten \
             --config=p/javascript \
@@ -130,12 +136,17 @@ jobs:
             echo "Semgrep report missing"; exit 1
           fi
           # Semgrep severities: ERROR (~Critical/High), WARNING (~Medium), INFO (~Low)
+          TOTAL=$(jq '.results | length' reports/semgrep.json)
           HIGH_COUNT=$(jq '[.results[] | select(.extra.severity=="ERROR")] | length' reports/semgrep.json)
-          echo "High/Critical SAST findings: $HIGH_COUNT"
+          WARN_COUNT=$(jq '[.results[] | select(.extra.severity=="WARNING")] | length' reports/semgrep.json)
+          echo "Semgrep findings total=$TOTAL error=$HIGH_COUNT warning=$WARN_COUNT"
           if [ "$HIGH_COUNT" -gt 0 ]; then
             echo "::error::Quality Gate FAILED - $HIGH_COUNT High/Critical SAST findings detected."
             jq '.results[] | select(.extra.severity=="ERROR") | {check_id, path, start, message: .extra.message}' reports/semgrep.json
             exit 1
+          fi
+          if [ "$WARN_COUNT" -gt 0 ]; then
+            echo "::warning::SAST found $WARN_COUNT WARNING findings (non-blocking)."
           fi
           echo "Quality Gate PASSED for SAST."
 
